@@ -1,0 +1,17 @@
+# Normalise line endings. Without this, checkouts on Windows commit CRLF and
+# the Linux CI runner sees every file as modified.
+* text=auto eol=lf
+
+# Gradle wrapper must stay executable and byte-exact.
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.jar binary
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.ttf binary
+*.otf binary
+*.apk binary
+*.keystore binary
+*.jks binary

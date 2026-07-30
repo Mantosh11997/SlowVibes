@@ -1,0 +1,31 @@
+name: slow_vibes
+description: "Slow Vibes — turn any song into Slow + Reverb audio."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  file_picker: ^11.0.2
+  just_audio: ^0.10.6
+  ffmpeg_kit_flutter_new_audio: ^2.5.0
+  share_plus: ^12.0.2
+  google_fonts: ^8.2.0
+
+  # Needed to find a writable folder for the exported files. Without it the
+  # Library screen would have to live in the cache directory, which Android is
+  # free to wipe — that would silently lose the user's songs.
+  path_provider: ^2.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
