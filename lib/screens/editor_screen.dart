@@ -19,10 +19,6 @@ class EditorScreen extends StatefulWidget {
 class _EditorScreenState extends State<EditorScreen> {
   final AudioPlayer _player = AudioPlayer();
 
-  double _slow = 0.85;
-  double _reverb = 0.35;
-  double _bass = 0.25;
-
   Duration _position = Duration.zero;
   Duration? _duration;
   bool _playing = false;
@@ -73,9 +69,9 @@ class _EditorScreenState extends State<EditorScreen> {
     if (_player.processingState == ProcessingState.completed) {
       await _player.seek(Duration.zero);
     }
-    // Mirror the Slow slider so the preview roughly matches the export. The
+    // Mirror the preset tempo so the preview roughly matches the export. The
     // reverb and bass only exist in the FFmpeg render.
-    await _player.setSpeed(_slow);
+    await _player.setSpeed(Audio.presetSlow);
     await _player.play();
   }
 
@@ -92,10 +88,7 @@ class _EditorScreenState extends State<EditorScreen> {
       MaterialPageRoute<void>(
         builder: (_) => ProcessingScreen(
           inputPath: widget.inputPath,
-          name: '$name (Slowed ${_slow.toStringAsFixed(2)}x)',
-          slow: _slow,
-          reverb: _reverb,
-          bass: _bass,
+          name: '$name (Slowed + Reverb)',
         ),
       ),
     );
@@ -214,59 +207,10 @@ class _EditorScreenState extends State<EditorScreen> {
 
           const SizedBox(height: 24),
 
-          // ---- Sliders -----------------------------------------------
-          SoftCard(
-            padding: const EdgeInsets.fromLTRB(18, 20, 18, 8),
-            child: Column(
-              children: <Widget>[
-                EffectSlider(
-                  label: 'Slow',
-                  icon: Icons.slow_motion_video_rounded,
-                  value: _slow,
-                  min: 0.5,
-                  max: 1.0,
-                  readout: '${_slow.toStringAsFixed(2)}x',
-                  onChanged: (double v) {
-                    setState(() => _slow = v);
-                    // Follow the slider live if something is already playing.
-                    if (_player.playing) {
-                      _player.setSpeed(v);
-                    }
-                  },
-                ),
-                EffectSlider(
-                  label: 'Reverb',
-                  icon: Icons.blur_on_rounded,
-                  value: _reverb,
-                  min: 0,
-                  max: 1,
-                  readout: '${(_reverb * 100).round()}%',
-                  onChanged: (double v) => setState(() => _reverb = v),
-                ),
-                EffectSlider(
-                  label: 'Bass',
-                  icon: Icons.graphic_eq_rounded,
-                  value: _bass,
-                  min: 0,
-                  max: 1,
-                  readout: '${(_bass * 100).round()}%',
-                  onChanged: (double v) => setState(() => _bass = v),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
-          Text(
-            'Playback preview only follows the Slow slider. Reverb and bass '
-            'are applied when you generate.',
-            style: const TextStyle(
-              fontSize: 12,
-              color: kTextFaint,
-              height: 1.45,
-            ),
-          ),
+          // ---- The preset that will be applied ------------------------
+          // Read-only. The values are fixed (see Audio.presetSlow and friends)
+          // so the user never has to tune anything — they just hit Generate.
+          const _PresetSummary(),
         ],
       ),
 
@@ -278,6 +222,126 @@ class _EditorScreenState extends State<EditorScreen> {
           label: 'Generate',
           icon: Icons.auto_awesome_rounded,
           onPressed: _generate,
+        ),
+      ),
+    );
+  }
+}
+
+/// Shows the fixed preset the export will use.
+///
+/// Read-only on purpose: the values are tuned once in [Audio] and the user
+/// just presses Generate. Showing them anyway sets the expectation of what the
+/// output will sound like, which an unexplained Generate button does not.
+class _PresetSummary extends StatelessWidget {
+  const _PresetSummary();
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftCard(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  gradient: kBrandGradient,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Slow + Reverb',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Tuned preset — nothing to adjust',
+                      style: TextStyle(fontSize: 12.5, color: kTextMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              _PresetChip(
+                label: 'Slow',
+                value: '${Audio.presetSlow.toStringAsFixed(2)}x',
+              ),
+              const SizedBox(width: 8),
+              _PresetChip(
+                label: 'Reverb',
+                value: '${(Audio.presetReverb * 100).round()}%',
+              ),
+              const SizedBox(width: 8),
+              _PresetChip(
+                label: 'Bass',
+                value: '${(Audio.presetBass * 100).round()}%',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One read-only value pill.
+class _PresetChip extends StatelessWidget {
+  const _PresetChip({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEEF2FF),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: <Widget>[
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF4F46E5),
+                fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: kTextMuted,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

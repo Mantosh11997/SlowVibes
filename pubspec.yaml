@@ -21,6 +21,7 @@ dependencies:
   # Library screen would have to live in the cache directory, which Android is
   # free to wipe — that would silently lose the user's songs.
   path_provider: ^2.1.6
+  google_mobile_ads: ^9.0.0
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +30,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/images/

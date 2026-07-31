@@ -11,17 +11,11 @@ class ProcessingScreen extends StatefulWidget {
   const ProcessingScreen({
     required this.inputPath,
     required this.name,
-    required this.slow,
-    required this.reverb,
-    required this.bass,
     super.key,
   });
 
   final String inputPath;
   final String name;
-  final double slow;
-  final double reverb;
-  final double bass;
 
   @override
   State<ProcessingScreen> createState() => _ProcessingScreenState();
@@ -50,12 +44,10 @@ class _ProcessingScreenState extends State<ProcessingScreen>
 
   Future<void> _run() async {
     try {
+      // Effect values come from the fixed preset in Audio.
       final String output = await Audio.render(
         inputPath: widget.inputPath,
         name: widget.name,
-        slow: widget.slow,
-        reverb: widget.reverb,
-        bass: widget.bass,
         onProgress: (double value) {
           if (!mounted) return;
           // Never let the bar go backwards — it reads as a bug even when the

@@ -4,10 +4,41 @@ import 'package:flutter/material.dart';
 
 import 'main.dart';
 
-/// The Slow Vibes logo: rounded bars forming a decaying waveform on a
-/// gradient tile.
+/// The Slow Vibes logo.
+///
+/// Loads `assets/images/logo.png`. To rebrand, replace that one file — nothing
+/// else needs editing. If it is missing or unreadable the painted waveform mark
+/// below is drawn instead, so a bad asset can never show a broken-image box.
 class AppLogo extends StatelessWidget {
   const AppLogo({this.size = 44, super.key});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.28),
+        child: Image.asset(
+          'assets/images/logo.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.medium,
+          errorBuilder:
+              (BuildContext context, Object error, StackTrace? stack) =>
+                  _PaintedLogo(size: size),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fallback mark, drawn only when the logo asset cannot be loaded.
+class _PaintedLogo extends StatelessWidget {
+  const _PaintedLogo({required this.size});
 
   final double size;
 
@@ -19,14 +50,6 @@ class AppLogo extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: kBrandGradient,
         borderRadius: BorderRadius.circular(size * 0.28),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: kPrimary.withValues(alpha: 0.32),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-            spreadRadius: -4,
-          ),
-        ],
       ),
       child: CustomPaint(painter: _LogoPainter(), size: Size.square(size)),
     );

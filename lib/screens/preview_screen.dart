@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../ads.dart';
 import '../audio.dart';
 import '../main.dart';
 import '../widgets.dart';
 
-/// Play/pause, seekbar, and Save / Share / Delete for a finished render.
+/// Play/pause, seekbar, and Download / Share / Delete for a finished render.
 ///
-/// The render arrives in a scratch folder. **Save** moves it into the library;
-/// **Delete** discards it. Leaving without saving keeps it in scratch, which the
-/// OS clears on its own.
+/// The render arrives in a scratch folder. **Download** plays a rewarded ad and,
+/// on reward, moves the file into the library; **Delete** discards it. Leaving
+/// without downloading keeps it in scratch, which the OS clears on its own.
 class PreviewScreen extends StatefulWidget {
   const PreviewScreen({
     required this.renderPath,
@@ -21,8 +22,9 @@ class PreviewScreen extends StatefulWidget {
   final String renderPath;
   final String name;
 
-  /// True when opened from the Library, where the file is already saved.
-  /// Without this the Save button would copy it a second time as "name (2)".
+  /// True when opened from the Library, where the file is already downloaded.
+  /// Without this the Download button would copy it a second time as
+  /// "name (2)" — and make the user watch an ad to do it.
   final bool alreadySaved;
 
   @override
@@ -45,6 +47,9 @@ class _PreviewScreenState extends State<PreviewScreen> {
   void initState() {
     super.initState();
     _load();
+    // Fetch the ad now so tapping Download does not sit on a spinner while the
+    // network round trip happens.
+    if (!_saved) Ads.preload();
   }
 
   Future<void> _load() async {
@@ -88,9 +93,39 @@ class _PreviewScreenState extends State<PreviewScreen> {
     await _player.play();
   }
 
-  Future<void> _save() async {
+  /// Plays a rewarded ad, then downloads the track into the library.
+  ///
+  /// Outcome policy:
+  ///  * **rewarded** — the ad was watched, so download.
+  ///  * **skipped**  — the user closed the ad early; no download, and we say so.
+  ///  * **unavailable** — no ad could be loaded (offline, no fill). The
+  ///    download still goes ahead. Blocking someone from a file they already
+  ///    generated because *our* ad network failed would be punishing them for
+  ///    our problem. Change this branch to `return` if you want a hard gate.
+  Future<void> _download() async {
     if (_saved || _busy) return;
+
+    // Pause first — the ad takes over audio focus and would fight playback.
+    await _player.pause();
     setState(() => _busy = true);
+
+    try {
+      final AdOutcome outcome = await Ads.showRewarded();
+      if (!mounted) return;
+
+      if (outcome == AdOutcome.skipped) {
+        showMessage(context, 'Watch the full ad to download this track.');
+        return;
+      }
+
+      await _persist();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Moves the render out of the scratch folder into the library.
+  Future<void> _persist() async {
     try {
       final Song song = await Audio.saveToLibrary(_path, widget.name);
       // The file moved, so the player must be pointed at the new location or
@@ -101,12 +136,10 @@ class _PreviewScreenState extends State<PreviewScreen> {
         _path = song.path;
         _saved = true;
       });
-      showMessage(context, 'Saved to your library');
+      showMessage(context, 'Downloaded to your library');
     } catch (error) {
       if (!mounted) return;
-      showMessage(context, 'Could not save: $error');
-    } finally {
-      if (mounted) setState(() => _busy = false);
+      showMessage(context, 'Could not download: $error');
     }
   }
 
@@ -184,7 +217,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            _saved ? 'Saved to library' : 'Not saved yet',
+            _saved ? 'In your library' : 'Watch a short ad to download',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
@@ -244,9 +277,9 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
           // ---- Actions -----------------------------------------------
           GradientButton(
-            label: _saved ? 'Saved' : 'Save',
+            label: _saved ? 'Downloaded' : (_busy ? 'Loading ad…' : 'Download'),
             icon: _saved ? Icons.check_rounded : Icons.download_rounded,
-            onPressed: _saved || _busy ? null : _save,
+            onPressed: _saved || _busy ? null : _download,
           ),
           const SizedBox(height: 12),
           Row(

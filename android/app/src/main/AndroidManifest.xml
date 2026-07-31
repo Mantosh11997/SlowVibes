@@ -2,10 +2,25 @@
     <!-- No storage permission is needed: file_picker uses the system document
          picker, which grants access to just the file the user taps. -->
 
+    <!-- google_mobile_ads needs network access. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:label="Slow Vibes"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- AdMob application ID.
+             This is GOOGLE'S OFFICIAL TEST APP ID. Replace it with your own
+             from the AdMob console before publishing — and note it is a
+             different value from the ad *unit* ID in lib/ads.dart. Leaving the
+             test ID in a released app means you earn nothing; putting your real
+             ID in during development and tapping your own ads gets the account
+             suspended. The app crashes on startup if this entry is missing. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

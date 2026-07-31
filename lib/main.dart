@@ -1,9 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'ads.dart';
 import 'screens/home_screen.dart';
 
 void main() {
+  // Required before touching any plugin ahead of runApp.
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Fire and forget: the SDK takes a moment to start and nothing on the first
+  // screen needs it, so awaiting here would only delay the first frame.
+  unawaited(Ads.init());
+
   runApp(const SlowVibesApp());
 }
 

@@ -46,6 +46,22 @@ class Audio {
   static int? _sessionId;
 
   // -------------------------------------------------------------------------
+  // The preset
+  // -------------------------------------------------------------------------
+  // The app deliberately exposes no controls: these three values are the
+  // "Slow Vibes sound". Tune them here and every future export follows.
+
+  /// Playback rate. 0.85 is slow enough to feel unmistakably slowed while
+  /// keeping vocals intelligible; below ~0.75 most tracks start to smear.
+  static const double presetSlow = 0.85;
+
+  /// Reverb wet amount, 0–1.
+  static const double presetReverb = 0.35;
+
+  /// Bass shelf amount, 0–1 (maps to 0–12 dB below 110 Hz).
+  static const double presetBass = 0.25;
+
+  // -------------------------------------------------------------------------
   // Folders
   // -------------------------------------------------------------------------
 
@@ -214,10 +230,10 @@ class Audio {
   static Future<String> render({
     required String inputPath,
     required String name,
-    required double slow,
-    required double reverb,
-    required double bass,
     required void Function(double progress) onProgress,
+    double slow = presetSlow,
+    double reverb = presetReverb,
+    double bass = presetBass,
   }) async {
     final Duration sourceDuration = await durationOf(inputPath);
     // Slowing to 0.5x makes the output twice as long; progress is measured
