@@ -95,13 +95,10 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
   /// Plays a rewarded ad, then downloads the track into the library.
   ///
-  /// Outcome policy:
-  ///  * **rewarded** — the ad was watched, so download.
-  ///  * **skipped**  — the user closed the ad early; no download, and we say so.
-  ///  * **unavailable** — no ad could be loaded (offline, no fill). The
-  ///    download still goes ahead. Blocking someone from a file they already
-  ///    generated because *our* ad network failed would be punishing them for
-  ///    our problem. Change this branch to `return` if you want a hard gate.
+  /// The reward is a hard gate: the file is only written once the ad has been
+  /// watched to completion. Every other outcome leaves the render in the
+  /// scratch folder and explains what to do, so the user is never left with a
+  /// dead button and no reason.
   Future<void> _download() async {
     if (_saved || _busy) return;
 
@@ -113,12 +110,19 @@ class _PreviewScreenState extends State<PreviewScreen> {
       final AdOutcome outcome = await Ads.showRewarded();
       if (!mounted) return;
 
-      if (outcome == AdOutcome.skipped) {
-        showMessage(context, 'Watch the full ad to download this track.');
-        return;
+      switch (outcome) {
+        case AdOutcome.rewarded:
+          await _persist();
+        case AdOutcome.skipped:
+          showMessage(context, 'Watch the full ad to download this track.');
+        case AdOutcome.noNetwork:
+          showMessage(
+            context,
+            'Turn on mobile data or Wi-Fi to load the ad and download.',
+          );
+        case AdOutcome.unavailable:
+          showMessage(context, 'No ad available right now. Please try again.');
       }
-
-      await _persist();
     } finally {
       if (mounted) setState(() => _busy = false);
     }

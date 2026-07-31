@@ -11,7 +11,11 @@ enum AdOutcome {
   /// The ad played but the user closed it before the reward point.
   skipped,
 
-  /// No ad could be shown — no network, no fill, or ads are unsupported here.
+  /// The device is offline, so no ad could be fetched.
+  noNetwork,
+
+  /// There is a connection but no ad could be loaded or shown — usually no
+  /// fill from the ad network.
   unavailable,
 }
 
@@ -81,6 +85,27 @@ class Ads {
     );
   }
 
+  /// Whether the device can currently reach the network.
+  ///
+  /// A DNS lookup rather than a package: it needs no dependency, and resolving
+  /// the ad-serving host is a closer proxy for "can we actually fetch an ad"
+  /// than a generic connectivity flag, which reports "connected" for a Wi-Fi
+  /// network that has no working internet behind it.
+  static Future<bool> hasNetwork() async {
+    try {
+      final List<InternetAddress> result = await InternetAddress.lookup(
+        'googleads.g.doubleclick.net',
+      ).timeout(const Duration(seconds: 4));
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
+    } on TimeoutException {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Shows a rewarded ad and resolves once it closes.
   ///
   /// Waits briefly for a preloaded ad if one is still in flight, so a user who
@@ -90,6 +115,10 @@ class Ads {
     if (!Platform.isAndroid && !Platform.isIOS) {
       return AdOutcome.unavailable;
     }
+
+    // Checked up front so an offline user gets "turn on mobile data" straight
+    // away instead of waiting out the preload timeout for a generic failure.
+    if (!await hasNetwork()) return AdOutcome.noNetwork;
 
     RewardedAd? ad = _preloaded;
 
@@ -138,8 +167,9 @@ class Ads {
   /// Polls briefly for an in-flight preload.
   static Future<RewardedAd?> _waitForPreload() async {
     const Duration step = Duration(milliseconds: 150);
-    // ~3s total. Longer than this and the user is just staring at a spinner
-    // for an ad, which is worse than letting the download through.
+    // ~3s total. We already know the device is online by this point, so this
+    // only covers a slow fetch; beyond a few seconds it is better to report
+    // "no ad available" than to leave the user watching a spinner.
     for (var i = 0; i < 20; i++) {
       if (_preloaded != null) return _preloaded;
       if (!_loading) break; // Load already failed.
