@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#F8FAFC</color>
+    <!-- Sampled from assets/images/logo.png so the adaptive icon's background
+         matches the artwork and the foreground tile blends into it. -->
+    <color name="ic_launcher_background">#080413</color>
 </resources>
