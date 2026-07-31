@@ -11,13 +11,19 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- AdMob application ID.
-             This is GOOGLE'S OFFICIAL TEST APP ID. Replace it with your own
-             from the AdMob console before publishing — and note it is a
-             different value from the ad *unit* ID in lib/ads.dart. Leaving the
-             test ID in a released app means you earn nothing; putting your real
-             ID in during development and tapping your own ads gets the account
-             suspended. The app crashes on startup if this entry is missing. -->
+        <!-- ==================== AdMob application ID ====================
+             The app crashes on startup if this meta-data is missing.
+
+             TEST id is active. Before publishing, comment out the TEST entry
+             below and uncomment the LIVE one, AND make the matching swap in
+             lib/ads.dart for the ad *unit* id. They are different values (this
+             one has a "~", the unit id has a "/") and both must be changed.
+
+             LIVE — Slow Vibes production app ID:
+             <meta-data
+                 android:name="com.google.android.gms.ads.APPLICATION_ID"
+                 android:value="ca-app-pub-4506957183782274~7716476517" />
+             ============================================================== -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713" />

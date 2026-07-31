@@ -21,23 +21,42 @@ enum AdOutcome {
 
 /// Rewarded ads.
 ///
-/// ## Test IDs are in use
+/// ## TEST IDs are currently in use
 ///
-/// The unit IDs below are **Google's official test IDs**. They always fill, and
-/// they are the only IDs safe to use during development — showing or tapping
-/// your own live ads gets an AdMob account suspended. Before publishing:
+/// The live AdMob IDs are recorded below but commented out. Test IDs always
+/// fill and are the only IDs safe to use during development — viewing or
+/// tapping your own live ads is what gets an AdMob account suspended, and
+/// Google detects it.
 ///
-///  1. Create an app + rewarded ad unit in the AdMob console.
-///  2. Replace [_androidRewardedUnitId] / [_iosRewardedUnitId] below.
-///  3. Replace the `APPLICATION_ID` meta-data in
-///     `android/app/src/main/AndroidManifest.xml` with your real AdMob app ID.
+/// ## Release checklist — BOTH steps, or ads silently never load
 ///
-/// Steps 2 and 3 are separate — the app ID and the ad unit ID are different
-/// values, and getting them mixed up produces ads that silently never load.
+///  1. In this file: comment out the TEST block, uncomment the LIVE block.
+///  2. In `android/app/src/main/AndroidManifest.xml`: do the same swap for the
+///     `com.google.android.gms.ads.APPLICATION_ID` meta-data.
+///
+/// The app ID and the ad unit ID are different values — the app ID contains a
+/// `~`, the ad unit ID contains a `/`. Swapping one and not the other, or
+/// putting one where the other belongs, is the most common cause of a rewarded
+/// ad that never appears.
 class Ads {
   Ads._();
 
-  // Google's official test rewarded units.
+  // ---------------------------------------------------------------------------
+  // LIVE — Slow Vibes production AdMob (uncomment for release)
+  // ---------------------------------------------------------------------------
+  // App ID (goes in AndroidManifest.xml, not here):
+  //     ca-app-pub-4506957183782274~7716476517
+  //
+  // static const String _androidRewardedUnitId =
+  //     'ca-app-pub-4506957183782274/3204330524';
+  //
+  // NOTE: there is no live iOS unit yet. iOS needs its own AdMob *app* entry
+  // and its own rewarded unit — the Android IDs will not serve on iOS.
+  // static const String _iosRewardedUnitId = 'ca-app-pub-XXXXXXXX/XXXXXXXX';
+
+  // ---------------------------------------------------------------------------
+  // TEST — Google's official sample units (in use)
+  // ---------------------------------------------------------------------------
   static const String _androidRewardedUnitId =
       'ca-app-pub-3940256099942544/5224354917';
   static const String _iosRewardedUnitId =
