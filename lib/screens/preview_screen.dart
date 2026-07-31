@@ -128,7 +128,8 @@ class _PreviewScreenState extends State<PreviewScreen> {
     }
   }
 
-  /// Moves the render out of the scratch folder into the library.
+  /// Moves the render into the library, then publishes it to the phone's
+  /// public Music folder so it is reachable outside the app.
   Future<void> _persist() async {
     try {
       final Song song = await Audio.saveToLibrary(_path, widget.name);
@@ -140,7 +141,20 @@ class _PreviewScreenState extends State<PreviewScreen> {
         _path = song.path;
         _saved = true;
       });
-      showMessage(context, 'Downloaded to your library');
+
+      // Publishing is best-effort. The track is already safe in the Library, so
+      // a MediaStore failure changes the message rather than losing the file.
+      final String? publicPath = await Audio.saveToMusicFolder(
+        song.path,
+        widget.name,
+      );
+      if (!mounted) return;
+      showMessage(
+        context,
+        publicPath == null
+            ? 'Saved to your library (could not write to the Music folder)'
+            : 'Saved to $publicPath',
+      );
     } catch (error) {
       if (!mounted) return;
       showMessage(context, 'Could not download: $error');

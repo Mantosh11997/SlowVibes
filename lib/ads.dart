@@ -42,25 +42,24 @@ class Ads {
   Ads._();
 
   // ---------------------------------------------------------------------------
-  // LIVE — Slow Vibes production AdMob (uncomment for release)
+  // LIVE — Slow Vibes production AdMob (ACTIVE)
   // ---------------------------------------------------------------------------
-  // App ID (goes in AndroidManifest.xml, not here):
+  // Matching app ID lives in AndroidManifest.xml:
   //     ca-app-pub-4506957183782274~7716476517
-  //
-  // static const String _androidRewardedUnitId =
-  //     'ca-app-pub-4506957183782274/3204330524';
-  //
-  // NOTE: there is no live iOS unit yet. iOS needs its own AdMob *app* entry
-  // and its own rewarded unit — the Android IDs will not serve on iOS.
-  // static const String _iosRewardedUnitId = 'ca-app-pub-XXXXXXXX/XXXXXXXX';
-
-  // ---------------------------------------------------------------------------
-  // TEST — Google's official sample units (in use)
-  // ---------------------------------------------------------------------------
   static const String _androidRewardedUnitId =
-      'ca-app-pub-3940256099942544/5224354917';
+      'ca-app-pub-4506957183782274/3204330524';
+
+  // iOS still points at Google's test unit: no live iOS unit exists. iOS needs
+  // its own AdMob *app* entry and its own rewarded unit — the Android IDs will
+  // not serve there. Harmless while shipping Android only.
   static const String _iosRewardedUnitId =
       'ca-app-pub-3940256099942544/1712485313';
+
+  // ---------------------------------------------------------------------------
+  // TEST — Google's official sample units (uncomment to go back to testing)
+  // ---------------------------------------------------------------------------
+  // static const String _androidRewardedUnitId =
+  //     'ca-app-pub-3940256099942544/5224354917';
 
   static String get _rewardedUnitId =>
       Platform.isIOS ? _iosRewardedUnitId : _androidRewardedUnitId;

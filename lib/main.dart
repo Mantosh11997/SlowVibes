@@ -4,15 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'ads.dart';
+import 'notifications.dart';
 import 'screens/home_screen.dart';
 
 void main() {
   // Required before touching any plugin ahead of runApp.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Fire and forget: the SDK takes a moment to start and nothing on the first
-  // screen needs it, so awaiting here would only delay the first frame.
+  // Both are fire-and-forget: they take a moment to start, nothing on the first
+  // screen needs them, and awaiting here would only delay the first frame.
   unawaited(Ads.init());
+  unawaited(NotificationService.init());
 
   runApp(const SlowVibesApp());
 }
@@ -59,6 +61,9 @@ class SlowVibesApp extends StatelessWidget {
     return MaterialApp(
       title: 'Slow Vibes',
       debugShowCheckedModeBanner: false,
+      // Lets a notification tap pop back to Home when the app was already open
+      // on the Editor or Preview screen.
+      navigatorKey: NotificationService.navigatorKey,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme:

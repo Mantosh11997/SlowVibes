@@ -6,27 +6,50 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Saving a download into the shared Music folder.
+         Capped at API 28: from Android 10 (29) scoped storage lets MediaStore
+         write into the shared collection with no permission at all, so
+         requesting it there would be an unnecessary prompt and a Play Store
+         review flag. See MainActivity.insertIntoMediaStore(). -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Daily reminders.
+         POST_NOTIFICATIONS and VIBRATE are contributed by
+         flutter_local_notifications' own manifest and merge in automatically,
+         so only the boot permission is declared here. Without it, Android drops
+         every scheduled alarm when the phone restarts and the reminders would
+         silently stop until the app was opened again.
+
+         Note there is deliberately no SCHEDULE_EXACT_ALARM: the reminders use
+         inexact scheduling (see NotificationService), because Google restricts
+         exact alarms to alarm and calendar apps. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:label="Slow Vibes"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
         <!-- ==================== AdMob application ID ====================
-             The app crashes on startup if this meta-data is missing.
+             LIVE production id is ACTIVE, paired with the live ad unit id in
+             lib/ads.dart. The app crashes on startup if this meta-data is
+             missing entirely.
 
-             TEST id is active. Before publishing, comment out the TEST entry
-             below and uncomment the LIVE one, AND make the matching swap in
-             lib/ads.dart for the ad *unit* id. They are different values (this
-             one has a "~", the unit id has a "/") and both must be changed.
+             Do NOT view or tap these ads on your own device now that they are
+             live — Google detects self-clicks and suspends accounts. To go back
+             to testing, restore the TEST entry below and make the matching swap
+             in lib/ads.dart.
 
-             LIVE — Slow Vibes production app ID:
+             TEST — Google's official sample app ID:
              <meta-data
                  android:name="com.google.android.gms.ads.APPLICATION_ID"
-                 android:value="ca-app-pub-4506957183782274~7716476517" />
+                 android:value="ca-app-pub-3940256099942544~3347511713" />
              ============================================================== -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-4506957183782274~7716476517" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -48,6 +71,26 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Re-registers the daily reminders after a reboot. Android clears all
+             pending alarms on shutdown, so without this receiver the schedule
+             is lost until the user next opens the app. The plugin ships the
+             class but not the manifest entry, so it has to be declared here. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Delivers the scheduled notification when its alarm fires. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
     </application>
     <queries>
         <intent>

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+
 import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/ffmpeg_session.dart';
 import 'package:ffmpeg_kit_flutter_new_audio/ffprobe_kit.dart';
@@ -129,6 +131,42 @@ class Audio {
       await source.delete();
     }
     return Song.fromFile(saved);
+  }
+
+  /// Bridge to the MediaStore code in MainActivity.kt.
+  static const MethodChannel _mediaStore = MethodChannel(
+    'slowvibes/mediastore',
+  );
+
+  /// Publishes a finished track into the phone's shared Music folder.
+  ///
+  /// Everything else the app writes lives in app-private storage, which no file
+  /// manager or music player can see — fine for the in-app Library, useless for
+  /// a button labelled Download. This copies the file into `Music/Slow Vibes/`
+  /// via MediaStore so it shows up in the Files app, in other music players,
+  /// and survives uninstalling Slow Vibes.
+  ///
+  /// Returns the user-visible path, or null if publishing failed. Failure is
+  /// deliberately non-fatal: the track is already in the in-app Library by this
+  /// point, so a MediaStore problem should degrade the message rather than lose
+  /// the download.
+  static Future<String?> saveToMusicFolder(String path, String name) async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final String extension = extensionOf(path);
+      return await _mediaStore.invokeMethod<String>(
+        'saveToMusic',
+        <String, String>{
+          'path': path,
+          'name': '$name.$extension',
+          'mimeType': _mimeTypeOf(path),
+        },
+      );
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
   }
 
   static Future<void> delete(String path) async {
