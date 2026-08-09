@@ -8,9 +8,19 @@ rejected, or the ads silently unfilled, if skipped.
 
 ## 1. Signing (blocking)
 
-Play will not accept a debug-signed build. The Gradle script reads
-`android/key.properties`, which is git-ignored and must exist on the machine
-doing the release build:
+Play will not accept a debug-signed build. Run this once, from the repository
+root, and it creates both the keystore and the properties file:
+
+```
+tool/make-upload-keystore.sh
+```
+
+It writes the `.jks` to `~/keystores` — outside the repo, so it cannot be
+committed — and refuses to overwrite an existing keystore, because clobbering
+one that has already signed a release is unrecoverable.
+
+Doing it by hand instead: the Gradle script reads `android/key.properties`,
+which is git-ignored and must exist on the machine doing the release build:
 
 ```properties
 storeFile=/absolute/path/to/slow-vibes-upload.jks
@@ -89,22 +99,45 @@ warmed up yet", not "broken".
 
 ---
 
-## 4. AdMob console
+## 4. AdMob console (blocking for revenue, not for the upload)
 
-- **Link the app to its Play listing.** In AdMob → Apps → Slow Vibes → App
-  settings, once the app is published. Unlinked apps get restricted ad serving.
-- **Configure the GDPR and US-state privacy messages.** AdMob → Privacy &
-  messaging. The app calls Google's User Messaging Platform at launch
-  (`Ads._gatherConsent`), but the SDK can only show a message that exists in
-  the console. Without one configured, EEA/UK/Swiss users are not monetised.
-- **`app-ads.txt`** — optional but worth doing; it protects the inventory from
-  spoofing and some demand sources require it. It must be served from the root
-  of the domain you put in the Play listing's *Website* field:
-  `https://<your-domain>/app-ads.txt`. The current privacy-policy URL is a
-  GitHub *project* page (`mantosh11997.github.io/SlowVibes/…`), whose root
-  domain is `mantosh11997.github.io` — so the file has to go in a
-  `mantosh11997.github.io` repository, not this one. AdMob shows the exact
-  line to publish under Apps → app-ads.txt.
+### Create the GDPR consent message
+
+The app calls Google's User Messaging Platform at launch
+(`Ads._gatherConsent`), but the SDK can only display a message that exists in
+your console. Until this is done, the consent code has nothing to show and
+EEA/UK/Swiss users are not monetised — the app is *not* fixed by the code
+alone.
+
+1. AdMob → **Privacy & messaging** → **European regulations (GDPR)**
+2. **Create message**, select the Slow Vibes app
+3. Consent options: keep all three — *Consent*, *Manage options*, *Do not
+   consent*. Removing the reject option is a policy violation.
+4. Ad partners: accept the default (all Google-certified partners) unless you
+   have a reason not to
+5. **Publish**
+
+Then do the same under **US states regulations**. It is not required for
+launch, but it costs one minute and covers CCPA-style requirements.
+
+The exact wording of these menus moves around; the shape of the flow does not.
+
+### Link the app to Play
+
+AdMob → Apps → Slow Vibes → **App settings** → link to the Play listing, once
+the app is published. Unlinked apps get restricted ad serving.
+
+### app-ads.txt
+
+Optional but worth doing; it protects the inventory from spoofing and some
+demand sources require it. It must be served from the root of the domain you
+put in the Play listing's *Website* field: `https://<your-domain>/app-ads.txt`.
+
+The current privacy-policy URL is a GitHub *project* page
+(`mantosh11997.github.io/SlowVibes/…`), whose root domain is
+`mantosh11997.github.io` — so the file has to go in a
+`mantosh11997.github.io` repository, not this one. AdMob shows the exact line
+to publish under Apps → app-ads.txt.
 
 ---
 
