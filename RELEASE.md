@@ -143,8 +143,28 @@ to publish under Apps → app-ads.txt.
 
 ## 5. Play Console — App content (blocking)
 
-These answers must match what the app actually does. Mismatches are the most
-common cause of a rejection or a post-launch policy strike.
+### Where these forms are
+
+Create the app entry first if it does not exist: <https://play.google.com/console>
+→ **All apps** → **Create app**. Free vs paid cannot be changed later.
+
+Then, with Slow Vibes selected:
+
+| What | Where |
+|---|---|
+| The questionnaires below | **Policy and programs** → **App content** |
+| Store listing, graphics, description | **Grow users** → **Store presence** → **Main store listing** |
+| Uploading the `.aab` | **Test and release** → **Testing → Closed testing**, or **Production** |
+
+The app's **Dashboard** also carries a *Set up your app* checklist that links
+straight to each required form and marks off the ones already done. Prefer it
+— Google rearranges that sidebar regularly, and the checklist is generated
+from what your app actually still owes.
+
+### The answers
+
+These must match what the app actually does. Mismatches are the most common
+cause of a rejection or a post-launch policy strike.
 
 | Section | Answer |
 |---|---|
