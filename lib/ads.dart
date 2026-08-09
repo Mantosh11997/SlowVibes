@@ -3,6 +3,9 @@ import 'dart:io';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import 'ad_test_config.dart';
+import 'consent.dart';
+
 /// What happened when we tried to show a rewarded ad.
 enum AdOutcome {
   /// The user watched enough of the ad to earn the reward.
@@ -17,20 +20,31 @@ enum AdOutcome {
   /// There is a connection but no ad could be loaded or shown — usually no
   /// fill from the ad network.
   unavailable,
+
+  /// The user is in a region where consent is required and has not given it,
+  /// so no ad may legally be requested. Only reachable in the EEA, the UK and
+  /// certain US states.
+  consentRequired,
 }
 
 /// Rewarded ads.
 ///
-/// ## TEST IDs are currently in use
+/// ## Consent comes first
 ///
-/// The live AdMob IDs are recorded below but commented out. Test IDs always
-/// fill and are the only IDs safe to use during development — viewing or
-/// tapping your own live ads is what gets an AdMob account suspended, and
-/// Google detects it.
+/// [init] runs the UMP consent flow (see consent.dart) before initialising the
+/// SDK, and nothing here requests an ad until that has finished. In a regulated
+/// region a user who never completes the form gets [AdOutcome.consentRequired]
+/// rather than an ad.
 ///
-/// ## Release checklist — BOTH steps, or ads silently never load
+/// ## LIVE IDs are currently in use
 ///
-///  1. In this file: comment out the TEST block, uncomment the LIVE block.
+/// Do not view or tap these ads on your own device. Google detects self-clicks
+/// and suspends accounts for them; to test on real hardware, register the
+/// device as an AdMob test device rather than switching the IDs back.
+///
+/// ## Switching between LIVE and TEST — BOTH steps, or ads silently never load
+///
+///  1. In this file: swap the active `_androidRewardedUnitId`.
 ///  2. In `android/app/src/main/AndroidManifest.xml`: do the same swap for the
 ///     `com.google.android.gms.ads.APPLICATION_ID` meta-data.
 ///
@@ -66,26 +80,81 @@ class Ads {
 
   static bool _initialised = false;
 
+  /// Completes when the startup sequence — consent, then SDK init — has
+  /// finished, however it turned out.
+  ///
+  /// Everything that touches an ad waits on this. Without it, a user who taps
+  /// Download in the first second would race the consent lookup and fall
+  /// through to "no ad available" for no reason.
+  static final Completer<void> _startup = Completer<void>();
+
+  /// Whether consent permits requesting ads at all. Re-evaluated if the user
+  /// completes the form later, so it is not final.
+  static bool _adsAllowed = false;
+
+  /// Guards against initialising the SDK twice when consent arrives late.
+  static bool _sdkInitialised = false;
+
   /// The ad kept ready so the Download button responds instantly instead of
   /// making the user wait for a network round trip after they tap.
   static RewardedAd? _preloaded;
   static bool _loading = false;
 
   /// Called once from `main()`.
+  ///
+  /// Consent runs *before* `MobileAds.initialize()` — that ordering is the
+  /// whole point. Initialising the SDK first can fire off an ad request before
+  /// the user has been asked anything, which is exactly the policy breach the
+  /// consent form exists to prevent.
   static Future<void> init() async {
     if (_initialised) return;
     _initialised = true;
     try {
-      await MobileAds.instance.initialize();
+      _adsAllowed = await Consent.gather();
+      if (_adsAllowed) await _initSdk();
     } catch (_) {
       // Ads are never allowed to stop the app from starting.
+    } finally {
+      if (!_startup.isCompleted) _startup.complete();
+    }
+  }
+
+  static Future<void> _initSdk() async {
+    if (_sdkInitialised) return;
+    _sdkInitialised = true;
+    try {
+      // Registered before initialize() so the very first request is already
+      // covered — a test device that is only registered afterwards can still
+      // put one real impression on the live account.
+      if (kAdTestMode && kAdTestDeviceIds.isNotEmpty) {
+        await MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(testDeviceIds: kAdTestDeviceIds),
+        );
+      }
+      await MobileAds.instance.initialize();
+    } catch (_) {
+      // Same rule: never fatal.
     }
   }
 
   /// Fetches an ad in the background. Safe to call repeatedly.
   static void preload() {
     if (_preloaded != null || _loading) return;
+    // Claimed up front so two rapid calls cannot both start a load while the
+    // first is still waiting on [_startup].
     _loading = true;
+    unawaited(_preloadWhenReady());
+  }
+
+  static Future<void> _preloadWhenReady() async {
+    await _startup.future;
+
+    // Nothing may be requested until consent allows it. The Download button
+    // handles this case by offering the form again; here we just stop.
+    if (!_adsAllowed) {
+      _loading = false;
+      return;
+    }
 
     RewardedAd.load(
       adUnitId: _rewardedUnitId,
@@ -136,7 +205,23 @@ class Ads {
 
     // Checked up front so an offline user gets "turn on mobile data" straight
     // away instead of waiting out the preload timeout for a generic failure.
+    // It also has to come before the consent retry below, which needs the
+    // network just as much as an ad request does.
     if (!await hasNetwork()) return AdOutcome.noNetwork;
+
+    // Let the startup consent flow finish rather than racing it. Kicked off
+    // here too, so a missed init() in main() degrades to a slow first tap
+    // instead of a future that never completes.
+    if (!_initialised) unawaited(init());
+    await _startup.future;
+
+    if (!_adsAllowed) {
+      // The user dismissed the form without answering, or it failed to load.
+      // Offer it once more instead of leaving Download permanently dead.
+      _adsAllowed = await Consent.retry();
+      if (!_adsAllowed) return AdOutcome.consentRequired;
+      await _initSdk();
+    }
 
     RewardedAd? ad = _preloaded;
 

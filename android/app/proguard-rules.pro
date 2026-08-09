@@ -59,6 +59,24 @@
 -keep class com.google.ads.** { *; }
 -dontwarn com.google.android.gms.ads.**
 
+# User Messaging Platform (the consent SDK). It lives in its own package, not
+# under gms.ads, so the rule above does not cover it — and its form is a
+# WebView driven by reflection over these types.
+-keep class com.google.android.ump.** { *; }
+-dontwarn com.google.android.ump.**
+
+# The UMP *implementation*, which is a separate package from the public API
+# above. R8 was observed stripping methods from consent_sdk.zzw and .zzaq —
+# signatures matching requestConsentInfoUpdate and
+# getPrivacyOptionsRequirementStatus, the two calls lib/consent.dart depends on
+# (see build/app/outputs/mapping/release/usage.txt). Whether those particular
+# overloads were reachable is not something the mapping output settles, and the
+# failure mode is invisible here: consent only runs in the EEA, so a break would
+# surface as EEA users silently getting no ads. About 1 MB to keep it; cheap
+# next to that.
+-keep class com.google.android.gms.internal.consent_sdk.** { *; }
+-dontwarn com.google.android.gms.internal.consent_sdk.**
+
 # --- FFmpegKit --------------------------------------------------------------
 # Resolves its native symbols through JNI; renaming these breaks every session.
 -keep class com.antonkarpenko.ffmpegkit.** { *; }

@@ -122,6 +122,11 @@ class _PreviewScreenState extends State<PreviewScreen> {
           );
         case AdOutcome.unavailable:
           showMessage(context, 'No ad available right now. Please try again.');
+        case AdOutcome.consentRequired:
+          showMessage(
+            context,
+            'Downloads are ad-supported. Accept the ads choice to continue.',
+          );
       }
     } finally {
       if (mounted) setState(() => _busy = false);

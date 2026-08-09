@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../audio.dart';
+import '../consent.dart';
 import '../main.dart';
 import '../widgets.dart';
 import 'editor_screen.dart';
@@ -20,10 +21,30 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Song> _recent = <Song>[];
   bool _loading = true;
 
+  /// Whether to offer the "Ads & privacy" button.
+  ///
+  /// UMP policy requires a way back into the consent form for any user who was
+  /// shown one. Everyone outside a regulated region gets `false` here and never
+  /// sees the button, so the header stays as it was.
+  bool _privacyOptions = false;
+
   @override
   void initState() {
     super.initState();
     _loadRecent();
+    _checkPrivacyOptions();
+  }
+
+  Future<void> _checkPrivacyOptions() async {
+    final bool required = await Consent.privacyOptionsRequired();
+    if (!mounted) return;
+    setState(() => _privacyOptions = required);
+  }
+
+  Future<void> _openPrivacyOptions() async {
+    await Consent.showPrivacyOptions();
+    // Answering the form can flip the requirement itself, so re-read it.
+    await _checkPrivacyOptions();
   }
 
   Future<void> _loadRecent() async {
@@ -100,6 +121,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
+                  if (_privacyOptions)
+                    IconButton(
+                      onPressed: _openPrivacyOptions,
+                      icon: const Icon(Icons.privacy_tip_outlined),
+                      tooltip: 'Ads & privacy',
+                      color: kTextMuted,
+                    ),
                   IconButton(
                     onPressed: _openLibrary,
                     icon: const Icon(Icons.library_music_rounded),
