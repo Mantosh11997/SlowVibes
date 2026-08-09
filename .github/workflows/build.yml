@@ -103,3 +103,13 @@ jobs:
           path: build/app/outputs/flutter-apk/*-release.apk
           if-no-files-found: error
           retention-days: 30
+
+      # Play Store uploads are app bundles, not APKs, and the bundle goes
+      # through a different Gradle task — so a green APK build is not proof the
+      # release upload will work. Built here to catch that, but deliberately not
+      # uploaded as an artifact: like the APKs above it is debug-signed, and
+      # Play rejects it. Produce the real one locally with `flutter build
+      # appbundle --release` once android/key.properties is in place. See
+      # RELEASE.md.
+      - name: Build app bundle (verification only — debug-signed)
+        run: flutter build appbundle --release

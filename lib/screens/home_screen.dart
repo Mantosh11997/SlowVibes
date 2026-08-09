@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../ads.dart';
 import '../audio.dart';
 import '../main.dart';
 import '../widgets.dart';
@@ -20,10 +21,23 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Song> _recent = <Song>[];
   bool _loading = true;
 
+  /// True only in regions where an ad consent form was shown.
+  bool _showAdPrivacy = false;
+
   @override
   void initState() {
     super.initState();
     _loadRecent();
+    _checkAdPrivacy();
+  }
+
+  /// Ad consent is gathered during launch, so the answer is not known when this
+  /// screen first builds. Waiting for it here is what puts the button on screen
+  /// for EEA users without showing it to anyone else.
+  Future<void> _checkAdPrivacy() async {
+    await Ads.init();
+    if (!mounted) return;
+    setState(() => _showAdPrivacy = Ads.privacyOptionsRequired);
   }
 
   Future<void> _loadRecent() async {
@@ -100,6 +114,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
+                  if (_showAdPrivacy)
+                    IconButton(
+                      onPressed: Ads.showPrivacyOptions,
+                      icon: const Icon(Icons.privacy_tip_outlined),
+                      tooltip: 'Ad privacy settings',
+                      color: kTextMuted,
+                    ),
                   IconButton(
                     onPressed: _openLibrary,
                     icon: const Icon(Icons.library_music_rounded),
